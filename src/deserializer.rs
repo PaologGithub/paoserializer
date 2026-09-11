@@ -1,0 +1,138 @@
+use std::{error::Error, fmt::Display};
+
+use serde::Deserialize;
+
+#[derive(Debug)]
+pub enum DeserializeError {
+    InvalidLength,
+    InvalidMagic,
+    InvalidHash
+}
+
+impl Display for DeserializeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DeserializeError::InvalidLength => write!(f, "Invalid bytes length"),
+            DeserializeError::InvalidMagic => write!(f, "Invalid magic"),
+            DeserializeError::InvalidHash => write!(f, "Invalid hash")
+        }
+    }
+}
+
+impl Error for DeserializeError {}
+
+pub fn deserialize<T: for<'a> Deserialize<'a>>(bytes: Vec<u8>) -> Result<T, Box<dyn Error>> {
+    if bytes.len() < 8 {
+        return Err(Box::new(DeserializeError::InvalidLength));
+    };
+
+    let hash: &[u8] = &bytes[..4];
+    let magic: &[u8] = &bytes[4..7];
+    let compress: bool = bytes[7] == 1;
+    let data: &[u8] = &bytes[8..];
+
+    if magic != b"PAO" {
+        return Err(Box::new(DeserializeError::InvalidMagic));
+    };
+
+    let data_hash: u32 = crc32fast::hash(data);
+    let hash_bytes: [u8; 4] = data_hash.to_le_bytes();
+
+    if hash_bytes != hash {
+        return Err(Box::new(DeserializeError::InvalidHash));
+    };
+
+    if compress {
+        let decompressed = zstd::decode_all(data)?;
+        let object: T = postcard::from_bytes(&decompressed)?;
+        return Ok(object);
+    }
+    let object: T = postcard::from_bytes(data)?;
+    Ok(object)
+}
+
+#[cfg(test)]
+mod data_deserializer_tests {
+
+    use std::time::Instant;
+    use serde::{Serialize, Deserialize};
+    use crate::deserializer::deserialize;
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Profile {
+        pub name: String,
+        pub uuid: String,
+        pub password: String,
+        pub age: u8
+    }
+
+    #[test]
+    pub fn test_deserialize() {
+        let profile = Profile {
+            name: "Paolog".to_string(),
+            uuid: "0000-0000-0000-0000".to_string(),
+            password: "12345678".to_string(),
+            age: 3
+        };
+        let bytes = [91, 14, 235, 28, 80, 65, 79, 0, 6, 80, 97, 111, 108, 111, 103, 19, 48, 48, 48, 48, 45, 48, 48, 48, 48, 45, 48, 48, 48, 48, 45, 48, 48, 48, 48, 8, 49, 50, 51, 52, 53, 54, 55, 56, 3];
+
+        let object: Profile = deserialize(bytes.to_vec()).unwrap();
+
+        assert_eq!(profile, object);
+    }
+
+    #[test]
+    pub fn test_deserialize_compression() {
+        let big_string = r#"According to all known laws of aviation, there is no way a bee should be able to fly.
+Its wings are too small to get its fat little body off the ground.
+The bee, of course, flies anyway because bees don't care what humans think is impossible.
+Yellow, black. Yellow, black. Yellow, black. Yellow, black.
+Ooh, black and yellow!
+Let's shake it up a little.
+Barry! Breakfast is ready!
+Coming!
+Hang on a second.
+Hello?
+Barry?
+Adam?
+Can you believe this is happening?
+I can't.
+I'll pick you up.
+Looking sharp.
+Use the stairs, Your father paid good money for those.
+Sorry. I'm excited.
+Here's the graduate.
+We're very proud of you, son."#;
+
+        let profile = Profile {
+            name: big_string.to_string(),
+            uuid: big_string.to_string(),
+            password: big_string.to_string(),
+            age: 3
+        };
+
+        let bytes = [138, 78, 227, 34, 80, 65, 79, 1, 40, 181, 47, 253, 0, 88, 197, 12, 0, 166, 97, 92, 42, 160, 37, 73, 7, 255, 255, 255, 255, 255, 0, 237, 79, 218, 150, 54, 32, 114, 147, 164, 200, 77, 136, 220, 132, 249, 125, 243, 63, 189, 40, 28, 203, 178, 235, 110, 7, 61, 82, 181, 55, 62, 49, 76, 0, 80, 0, 83, 0, 198, 115, 117, 235, 122, 35, 114, 110, 125, 103, 242, 237, 175, 133, 11, 127, 183, 159, 13, 207, 9, 211, 230, 220, 136, 131, 222, 66, 190, 253, 92, 6, 62, 141, 167, 229, 86, 241, 51, 141, 227, 31, 54, 95, 118, 214, 103, 75, 213, 55, 176, 213, 70, 77, 224, 145, 61, 55, 184, 206, 154, 101, 202, 215, 194, 111, 63, 97, 154, 218, 30, 71, 65, 128, 4, 1, 157, 9, 167, 240, 158, 24, 94, 173, 128, 115, 164, 28, 184, 140, 27, 154, 93, 43, 15, 28, 148, 203, 80, 230, 101, 22, 61, 235, 21, 166, 170, 207, 12, 23, 167, 222, 168, 154, 103, 195, 227, 93, 176, 77, 103, 118, 120, 164, 241, 135, 205, 99, 120, 78, 93, 200, 13, 201, 205, 237, 113, 100, 111, 200, 52, 158, 138, 192, 65, 137, 185, 109, 201, 83, 245, 17, 100, 255, 210, 6, 204, 215, 42, 16, 7, 117, 193, 240, 56, 226, 28, 18, 166, 44, 25, 6, 213, 89, 207, 170, 250, 153, 72, 93, 105, 220, 237, 59, 195, 131, 115, 88, 48, 21, 156, 195, 97, 215, 74, 132, 131, 18, 219, 35, 249, 120, 182, 79, 24, 34, 156, 66, 194, 116, 217, 131, 83, 120, 9, 179, 157, 245, 205, 136, 40, 152, 205, 224, 133, 215, 26, 26, 28, 132, 103, 220, 91, 159, 10, 42, 62, 23, 1, 0, 16, 91, 190, 193, 237, 59, 178, 79, 110, 27, 243, 215, 50, 241, 108, 69, 26, 56, 40, 27, 93, 194, 150, 112, 145, 45, 91, 15, 4, 249, 165, 64, 28, 189, 214, 118, 192, 65, 201, 171, 250, 109, 145, 191, 100, 187, 60, 237, 38, 79, 138, 204, 91, 170, 70, 228, 205, 237, 129, 27, 184, 41, 54, 39, 23, 56, 136, 105, 168, 248, 9, 83, 101, 55, 225, 32, 198, 41, 135, 6, 11, 0, 95, 71, 143, 252, 23, 133, 16, 240, 178, 51, 228, 86, 19, 93, 149, 216, 253, 117, 236, 96, 203, 235, 132, 6, 185, 114, 115, 39, 211, 64, 33, 18, 148, 20];
+        
+        let object: Profile = deserialize(bytes.to_vec()).unwrap();
+
+        assert_eq!(profile, object);
+    }
+
+    #[test]
+    pub fn test_deserialize_compression_time() {
+        let mut times = Vec::new();
+        let bytes = [138, 78, 227, 34, 80, 65, 79, 1, 40, 181, 47, 253, 0, 88, 197, 12, 0, 166, 97, 92, 42, 160, 37, 73, 7, 255, 255, 255, 255, 255, 0, 237, 79, 218, 150, 54, 32, 114, 147, 164, 200, 77, 136, 220, 132, 249, 125, 243, 63, 189, 40, 28, 203, 178, 235, 110, 7, 61, 82, 181, 55, 62, 49, 76, 0, 80, 0, 83, 0, 198, 115, 117, 235, 122, 35, 114, 110, 125, 103, 242, 237, 175, 133, 11, 127, 183, 159, 13, 207, 9, 211, 230, 220, 136, 131, 222, 66, 190, 253, 92, 6, 62, 141, 167, 229, 86, 241, 51, 141, 227, 31, 54, 95, 118, 214, 103, 75, 213, 55, 176, 213, 70, 77, 224, 145, 61, 55, 184, 206, 154, 101, 202, 215, 194, 111, 63, 97, 154, 218, 30, 71, 65, 128, 4, 1, 157, 9, 167, 240, 158, 24, 94, 173, 128, 115, 164, 28, 184, 140, 27, 154, 93, 43, 15, 28, 148, 203, 80, 230, 101, 22, 61, 235, 21, 166, 170, 207, 12, 23, 167, 222, 168, 154, 103, 195, 227, 93, 176, 77, 103, 118, 120, 164, 241, 135, 205, 99, 120, 78, 93, 200, 13, 201, 205, 237, 113, 100, 111, 200, 52, 158, 138, 192, 65, 137, 185, 109, 201, 83, 245, 17, 100, 255, 210, 6, 204, 215, 42, 16, 7, 117, 193, 240, 56, 226, 28, 18, 166, 44, 25, 6, 213, 89, 207, 170, 250, 153, 72, 93, 105, 220, 237, 59, 195, 131, 115, 88, 48, 21, 156, 195, 97, 215, 74, 132, 131, 18, 219, 35, 249, 120, 182, 79, 24, 34, 156, 66, 194, 116, 217, 131, 83, 120, 9, 179, 157, 245, 205, 136, 40, 152, 205, 224, 133, 215, 26, 26, 28, 132, 103, 220, 91, 159, 10, 42, 62, 23, 1, 0, 16, 91, 190, 193, 237, 59, 178, 79, 110, 27, 243, 215, 50, 241, 108, 69, 26, 56, 40, 27, 93, 194, 150, 112, 145, 45, 91, 15, 4, 249, 165, 64, 28, 189, 214, 118, 192, 65, 201, 171, 250, 109, 145, 191, 100, 187, 60, 237, 38, 79, 138, 204, 91, 170, 70, 228, 205, 237, 129, 27, 184, 41, 54, 39, 23, 56, 136, 105, 168, 248, 9, 83, 101, 55, 225, 32, 198, 41, 135, 6, 11, 0, 95, 71, 143, 252, 23, 133, 16, 240, 178, 51, 228, 86, 19, 93, 149, 216, 253, 117, 236, 96, 203, 235, 132, 6, 185, 114, 115, 39, 211, 64, 33, 18, 148, 20];
+        
+        for _ in 0..1000 {
+            let start = Instant::now();
+            deserialize::<Profile>(bytes.to_vec()).unwrap();
+            let finish = Instant::now();
+
+            times.push((finish - start).as_nanos());
+        }
+        let sum: u128 = times.iter().sum();
+        let average = sum / 1000;
+
+        println!("Time: {:?}", average);
+    }
+}
