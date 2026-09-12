@@ -1,6 +1,7 @@
-use std::{error::Error, fmt::Display};
+use std::{error::Error, fmt::Display, io::{self, ErrorKind}};
 
 use serde::Deserialize;
+use zstd_safe::get_frame_content_size;
 
 #[derive(Debug)]
 pub enum DeserializeError {
@@ -43,7 +44,21 @@ pub fn deserialize<T: for<'a> Deserialize<'a>>(bytes: Vec<u8>) -> Result<T, Box<
     };
 
     if compress {
-        let decompressed = zstd::decode_all(data)?;
+        let content_size = match get_frame_content_size(data) {
+            Ok(Some(size)) => size as usize,
+            Ok(None) => {
+                return Err(Box::new(DeserializeError::InvalidLength));
+            }
+            Err(_) => {
+                return Err(Box::new(DeserializeError::InvalidLength));
+            }
+        };
+
+        let mut decompressed = vec![0u8; content_size];
+        let written = zstd_safe::decompress(&mut decompressed, data)
+            .map_err(|_| io::Error::from(ErrorKind::InvalidData))?;
+        decompressed.truncate(written);
+
         let object: T = postcard::from_bytes(&decompressed)?;
         return Ok(object);
     }
