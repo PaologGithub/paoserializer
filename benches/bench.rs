@@ -70,8 +70,8 @@ fn bench_serialize(c: &mut Criterion) {
 fn bench_deserialize(c: &mut Criterion) {
     let mut group = c.benchmark_group("deserialize");
 
-    let small_bytes = serialize(&small_profile()).unwrap();
-    let large_bytes = serialize(&large_profile()).unwrap();
+    let small_bytes = serialize(small_profile()).unwrap();
+    let large_bytes = serialize(large_profile()).unwrap();
 
     group.bench_function(BenchmarkId::new("uncompressed", "small_profile"), |b| {
         b.iter(|| {

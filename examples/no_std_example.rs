@@ -23,7 +23,7 @@ pub fn main() {
     }
 
     let test = NoStdStruct {
-        list: list,
+        list,
         test: true,
     };
 
