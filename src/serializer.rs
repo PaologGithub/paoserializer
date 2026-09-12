@@ -1,9 +1,10 @@
-use std::{error::Error, io::{self, ErrorKind}};
-
 use serde::Serialize;
 
-pub fn serialize<T: Serialize>(object: T) -> Result<Vec<u8>, Box<dyn Error>> {
-    let bytes = postcard::to_stdvec(&object)?;
+use crate::errors::SerializeError;
+
+pub fn serialize<T: Serialize>(object: T) -> Result<Vec<u8>, SerializeError> {
+    let bytes = postcard::to_stdvec(&object)
+        .map_err(|e| SerializeError::PostCardError(e))?;
 
     let mut compressed;
     let payload: &[u8];
@@ -11,7 +12,7 @@ pub fn serialize<T: Serialize>(object: T) -> Result<Vec<u8>, Box<dyn Error>> {
     if bytes.len() > 150 {
         compressed = vec![0u8; zstd_safe::compress_bound(bytes.len())];
         let written = zstd_safe::compress(&mut compressed, bytes.as_slice(), 3)
-            .map_err(|e| io::Error::from(ErrorKind::InvalidData))?;
+            .map_err(|e| SerializeError::ZStdError(e))?;
         compressed.truncate(written);
         payload = compressed.as_slice();
     } else {
