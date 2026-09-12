@@ -22,10 +22,7 @@ pub fn main() {
         list.push(hello.clone());
     }
 
-    let test = NoStdStruct {
-        list,
-        test: true,
-    };
+    let test = NoStdStruct { list, test: true };
 
     let serialized = serialize(&test).unwrap();
     let object: NoStdStruct = deserialize(serialized.as_slice()).unwrap();
