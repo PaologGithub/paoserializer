@@ -8,6 +8,9 @@ repository = "https://github.com/PaologGithub/paoserializer"
 readme = "README.md"
 keywords = ["serialization", "no-std", "serde", "postcard", "zstd"]
 categories = ["no-std", "encoding"]
+exclude = [
+    "/.github/*"
+]
 
 [dependencies]
 crc32fast = { version = "1.5.1", default-features = false }
