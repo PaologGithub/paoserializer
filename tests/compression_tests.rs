@@ -43,6 +43,6 @@ pub fn test_compression() {
     let serialized = serialize(&profile).unwrap();
     assert_eq!(serialized[7], 1);
 
-    let object: Profile = deserialize(serialized).unwrap();
+    let object: Profile = deserialize(serialized.as_slice()).unwrap();
     assert_eq!(object, profile);
 }

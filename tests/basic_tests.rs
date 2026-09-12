@@ -34,9 +34,9 @@ pub fn test_deserialize() {
         password: "12345678".to_string(),
         age: 3
     };
-    let bytes = [91, 14, 235, 28, 80, 65, 79, 0, 6, 80, 97, 111, 108, 111, 103, 19, 48, 48, 48, 48, 45, 48, 48, 48, 48, 45, 48, 48, 48, 48, 45, 48, 48, 48, 48, 8, 49, 50, 51, 52, 53, 54, 55, 56, 3];
+    let bytes: [u8; 45] = [91, 14, 235, 28, 80, 65, 79, 0, 6, 80, 97, 111, 108, 111, 103, 19, 48, 48, 48, 48, 45, 48, 48, 48, 48, 45, 48, 48, 48, 48, 45, 48, 48, 48, 48, 8, 49, 50, 51, 52, 53, 54, 55, 56, 3];
 
-    let object: Profile = deserialize(bytes.to_vec()).unwrap();
+    let object: Profile = deserialize(&bytes).unwrap();
 
     assert_eq!(profile, object);
 }

@@ -1,9 +1,10 @@
+use alloc::vec;
 use serde::Deserialize;
 use zstd_safe::get_frame_content_size;
 
 use crate::errors::DeserializeError;
 
-pub fn deserialize<T: for<'a> Deserialize<'a>>(bytes: Vec<u8>) -> Result<T, DeserializeError> {
+pub fn deserialize<T: for<'a> Deserialize<'a>>(bytes: &[u8]) -> Result<T, DeserializeError> {
     if bytes.len() < 8 {
         return Err(DeserializeError::InvalidLength);
     };
@@ -36,7 +37,7 @@ pub fn deserialize<T: for<'a> Deserialize<'a>>(bytes: Vec<u8>) -> Result<T, Dese
         };
 
         let mut decompressed = vec![0u8; content_size];
-        let written = zstd_safe::decompress(&mut decompressed, data)
+        let written = zstd_safe::decompress(&mut decompressed[..], data)
             .map_err(|e| DeserializeError::ZStdError(e))?;
         decompressed.truncate(written);
 

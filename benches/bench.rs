@@ -74,11 +74,11 @@ fn bench_deserialize(c: &mut Criterion) {
     let large_bytes = serialize(&large_profile()).unwrap();
 
     group.bench_function(BenchmarkId::new("uncompressed", "small_profile"), |b| {
-        b.iter(|| deserialize::<Profile>(std::hint::black_box(small_bytes.clone())).unwrap())
+        b.iter(|| deserialize::<Profile>(std::hint::black_box(small_bytes.clone().as_slice())).unwrap())
     });
 
     group.bench_function(BenchmarkId::new("compressed", "large_profile"), |b| {
-        b.iter(|| deserialize::<Profile>(std::hint::black_box(large_bytes.clone())).unwrap())
+        b.iter(|| deserialize::<Profile>(std::hint::black_box(large_bytes.clone().as_slice())).unwrap())
     });
 
     group.finish();
@@ -91,7 +91,7 @@ fn bench_basic_serialization(c: &mut Criterion) {
         let profile = small_profile();
         b.iter(|| {
             let bytes = serialize(std::hint::black_box(&profile)).unwrap();
-            deserialize::<Profile>(bytes).unwrap()
+            deserialize::<Profile>(bytes.as_slice()).unwrap()
         })
     });
 
@@ -99,7 +99,7 @@ fn bench_basic_serialization(c: &mut Criterion) {
         let profile = large_profile();
         b.iter(|| {
             let bytes = serialize(std::hint::black_box(&profile)).unwrap();
-            deserialize::<Profile>(bytes).unwrap()
+            deserialize::<Profile>(bytes.as_slice()).unwrap()
         })
     });
 
