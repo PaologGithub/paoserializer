@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use serde::{Deserialize, Serialize};
 
 use paoserializer::deserializer::deserialize;
@@ -74,11 +74,15 @@ fn bench_deserialize(c: &mut Criterion) {
     let large_bytes = serialize(&large_profile()).unwrap();
 
     group.bench_function(BenchmarkId::new("uncompressed", "small_profile"), |b| {
-        b.iter(|| deserialize::<Profile>(std::hint::black_box(small_bytes.clone().as_slice())).unwrap())
+        b.iter(|| {
+            deserialize::<Profile>(std::hint::black_box(small_bytes.clone().as_slice())).unwrap()
+        })
     });
 
     group.bench_function(BenchmarkId::new("compressed", "large_profile"), |b| {
-        b.iter(|| deserialize::<Profile>(std::hint::black_box(large_bytes.clone().as_slice())).unwrap())
+        b.iter(|| {
+            deserialize::<Profile>(std::hint::black_box(large_bytes.clone().as_slice())).unwrap()
+        })
     });
 
     group.finish();
@@ -106,5 +110,10 @@ fn bench_basic_serialization(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_serialize, bench_deserialize, bench_basic_serialization);
+criterion_group!(
+    benches,
+    bench_serialize,
+    bench_deserialize,
+    bench_basic_serialization
+);
 criterion_main!(benches);

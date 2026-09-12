@@ -6,7 +6,7 @@ pub enum DeserializeError {
     InvalidMagic,
     InvalidHash,
     ZStdError(zstd_safe::ErrorCode),
-    PostCardError(postcard::Error)
+    PostCardError(postcard::Error),
 }
 
 impl Display for DeserializeError {
@@ -16,7 +16,7 @@ impl Display for DeserializeError {
             DeserializeError::InvalidMagic => write!(f, "Invalid magic"),
             DeserializeError::InvalidHash => write!(f, "Invalid hash"),
             DeserializeError::ZStdError(error) => write!(f, "zstd Error: {}", error),
-            DeserializeError::PostCardError(error) => write!(f, "postcard Error: {}", error)
+            DeserializeError::PostCardError(error) => write!(f, "postcard Error: {}", error),
         }
     }
 }
@@ -24,18 +24,17 @@ impl Display for DeserializeError {
 #[cfg(feature = "std")]
 impl std::error::Error for DeserializeError {}
 
-
 #[derive(Debug)]
 pub enum SerializeError {
     PostCardError(postcard::Error),
-    ZStdError(zstd_safe::ErrorCode)
+    ZStdError(zstd_safe::ErrorCode),
 }
 
 impl Display for SerializeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SerializeError::ZStdError(error) => write!(f, "zstd Error: {}", error),
-            SerializeError::PostCardError(error) => write!(f, "postcard Error: {}", error)
+            SerializeError::PostCardError(error) => write!(f, "postcard Error: {}", error),
         }
     }
 }

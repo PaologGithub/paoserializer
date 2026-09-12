@@ -1,14 +1,17 @@
 #![no_std]
 extern crate alloc;
 
-use alloc::{string::{String, ToString}, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use paoserializer::{deserializer::deserialize, serializer::serialize};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct NoStdStruct {
     pub list: Vec<String>,
-    pub test: bool
+    pub test: bool,
 }
 
 // Run with `cargo run --example no_std_test --no-default-features`
@@ -21,7 +24,7 @@ pub fn main() {
 
     let test = NoStdStruct {
         list: list,
-        test: true
+        test: true,
     };
 
     let serialized = serialize(&test).unwrap();

@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use paoserializer::{deserializer::deserialize, serializer::serialize};
 
@@ -7,7 +7,7 @@ pub struct Profile {
     pub name: String,
     pub uuid: String,
     pub password: String,
-    pub age: u8
+    pub age: u8,
 }
 
 const BIG_STRING: &str = r#"According to all known laws of aviation, there is no way a bee should be able to fly.
@@ -37,7 +37,7 @@ pub fn test_compression() {
         name: BIG_STRING.to_string(),
         uuid: BIG_STRING.to_string(),
         password: BIG_STRING.to_string(),
-        age: 3
+        age: 3,
     };
 
     let serialized = serialize(&profile).unwrap();

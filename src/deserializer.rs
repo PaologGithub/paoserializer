@@ -38,14 +38,13 @@ pub fn deserialize<T: for<'a> Deserialize<'a>>(bytes: &[u8]) -> Result<T, Deseri
 
         let mut decompressed = vec![0u8; content_size];
         let written = zstd_safe::decompress(&mut decompressed[..], data)
-            .map_err(|e| DeserializeError::ZStdError(e))?;
+            .map_err(DeserializeError::ZStdError)?;
         decompressed.truncate(written);
 
-        let object: T = postcard::from_bytes(&decompressed)
-            .map_err(|e| DeserializeError::PostCardError(e))?;
+        let object: T =
+            postcard::from_bytes(&decompressed).map_err(DeserializeError::PostCardError)?;
         return Ok(object);
     }
-    let object: T = postcard::from_bytes(data)
-        .map_err(|e| DeserializeError::PostCardError(e))?;
+    let object: T = postcard::from_bytes(data).map_err(DeserializeError::PostCardError)?;
     Ok(object)
 }
