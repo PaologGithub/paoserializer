@@ -1,0 +1,45 @@
+name: Rust
+
+on:
+    push:
+        branches: [ "master" ]
+    pull_request:
+        branches: [ "master" ]
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v4
+        - uses: dtolnay/rust-toolchain@stable
+          with:
+              components: rustfmt, clippy
+        - uses: Swatinem/rust-cache@v2
+
+        - name: Fmt
+          run: cargo fmt --check
+        - name: Clippy
+          run: cargo clippy --all-targets --all-features -- -D warnings
+        - name: Build
+          run: cargo build --verbose
+        - name: Test
+          run: cargo test --verbose
+
+    no_std:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v4
+        - uses: dtolnay/rust-toolchain@stable
+          with:
+                targets: thumbv6m-none-eabi
+        - uses: Swatinem/rust-cache@v2
+
+        - name: Check no_std
+          run: cargo check --no-default-features
+        - name: Check no_std
+          run: cargo check --no-default-features --target thumbv6m-none-eabi
+        - name: Build no_std example
+          run: cargo build --example no_std_example --no-default-features
